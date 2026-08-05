@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+
+echo "===== Maven Build ====="
+mvn clean package -DskipTests
+
+echo "===== Creating Image Tag ====="
+TAG=$(date +%Y%m%d-%H%M%S)
+
+echo "Building image: demoapp:$TAG"
+docker build -t demoapp:$TAG .
+
+echo "===== Removing Old Container ====="
+
+if docker ps -a --format '{{.Names}}' | grep -q "^demoapp$"; then
+    docker stop demoapp
+    docker rm demoapp
+fi
+
+echo "===== Starting New Container ====="
+
+docker run -d \
+    --name demoapp \
+    -p 9999:8080 \
+    demoapp:$TAG
+
+echo "===== Deployment Complete ====="
+
+echo "Current Image Tag: $TAG"
+docker images demoapp
+docker ps
